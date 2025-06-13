@@ -13,18 +13,24 @@ conn = psycopg2.connect(
 
 cursor = conn.cursor()
 
-@app.route('/szkv/stats', methods=['GET'])
+@app.route('/stats', methods=["GET"])
 def get_stats():
-    cons_id = int(request.args.get('pin'))
+    
+    cons_id = request.args.get("pin")
+    print(cons_id)
     try:
         cursor.execute("SELECT name FROM cf.consumers WHERE id = %s", (cons_id,))
         consumer = cursor.fetchone()
         name = consumer[0] if consumer else 'Unknown Consumer'
+        print(name)
         return jsonify(name), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=5000, debug=True)    
+    app.run(host='0.0.0.0', port=5000, ssl_context=(
+        '/home/al/Python/SZKV_SRV/cert/cert.pem',
+        '/home/al/Python/SZKV_SRV/cert/key.pem'),
+         debug=True)    
 
