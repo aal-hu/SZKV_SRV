@@ -1,0 +1,97 @@
+
+kérelmek átmeneti tárolására set adattípus
+-----------------------------------------
+pip install flask psycopg2 requests
+---------
+projekt/
+├── server.py
+├── client.py
+├── cert/
+│   ├── cert.pem         ← tanúsítvány
+│   └── key.pem          ← privát kulcs
+--------------
+mkdir cert
+openssl req -x509 -newkey rsa:4096 -keyout cert/key.pem -out cert/cert.pem -days 365 -nodes
+---------------------
+from flask import Flask, request, jsonify
+import psycopg2
+
+app = Flask(__name__)
+
+# PostgreSQL kapcsolat
+conn = psycopg2.connect(
+    dbname="teszt_adatbazis",
+    user="postgres",
+    password="jelszo123",
+    host="localhost"
+)
+cursor = conn.cursor()
+
+@app.route('/insert', methods=['POST'])
+def insert():
+    data = request.get_json()
+    name = data.get('name')
+    age = data.get('age')
+    try:
+        cursor.execute("INSERT INTO emberek (nev, kor) VALUES (%s, %s)", (name, age))
+        conn.commit()
+        return jsonify({'status': 'success', 'message': 'Beszúrás sikeres'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+@app.route('/select', methods=['GET'])
+def select():
+    try:
+        cursor.execute("SELECT * FROM emberek")
+        rows = cursor.fetchall()
+        return jsonify({'status': 'success', 'data': rows})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, ssl_context=('cert/cert.pem', 'cert/key.pem'))
+
+---------------------------
+import requests
+import urllib3
+
+urllib3.disable_warnings()  # Ha önaláírt tanúsítványt használsz
+
+BASE_URL = "https://szerver_ip_vagy_doma.in:5000"
+CERT_VERIFY = False  # állítsd True-ra, ha hiteles tanúsítványod van
+
+# 1. Beszúrás
+response = requests.post(
+    f"{BASE_URL}/insert",
+    json={"name": "Józsi", "age": 45},
+    verify=CERT_VERIFY
+)
+print("Insert válasz:", response.json())
+
+# 2. Lekérdezés
+response = requests.get(f"{BASE_URL}/select", verify=CERT_VERIFY)
+print("Select válasz:", response.json())
+----------------------------------------------
+app.run(
+    host='0.0.0.0',
+    port=5000,
+    ssl_context=(
+        '/etc/letsencrypt/live/<domain_neved>/fullchain.pem',
+        '/etc/letsencrypt/live/<domain_neved>/privkey.pem'
+    )
+)
+--------------------------------------------
+sudo cp /etc/letsencrypt/live/api.example.com/fullchain.pem /home/user/api_certs/
+sudo cp /etc/letsencrypt/live/api.example.com/privkey.pem /home/user/api_certs/
+sudo chown user:user /home/user/api_certs/*.pem
+chmod 400 /home/user/api_certs/*.pem
+---------------------------------------------------------
+ssl_context=(
+    '/home/user/api_certs/fullchain.pem',
+    '/home/user/api_certs/privkey.pem'
+)
+------------------------------------------------------
+
+
+
+

@@ -13,16 +13,14 @@ conn = psycopg2.connect(
 
 cursor = conn.cursor()
 
-@app.route('/stats', methods=["GET"])
+@app.route('/consumer_name', methods=["GET"])
 def get_stats():
     
     cons_id = request.args.get("pin")
-    print(cons_id)
     try:
         cursor.execute("SELECT name FROM cf.consumers WHERE id = %s", (cons_id,))
         consumer = cursor.fetchone()
         name = consumer[0] if consumer else 'Unknown Consumer'
-        print(name)
         return jsonify(name), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
