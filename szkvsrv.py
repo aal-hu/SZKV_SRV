@@ -104,6 +104,9 @@ def get_stats():
 def req_coffee():
     data = request.get_json()
     cons_id = data.get("pin")
+    bag_id = fetch_one("SELECT id FROM cf.bags WHERE end_date IS NULL", ())
+    if not bag_id:
+        return jsonify({"error": "Nincs megkezdett csomag!"}), 400
     if cons_id:
         req_add({"id": cons_id, "time": ""})
         return jsonify({"status": "success"}), 200
