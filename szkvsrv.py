@@ -48,6 +48,15 @@ def req_add(item):
             req_list.append(item)
             cons_ids.add(item["id"])
 
+def req_remove(item_del):            
+    with lock:
+        for i, item in enumerate(req_list):
+            if item["id"] == item_del["id"]:
+                    del req_list[i]
+                    cons_ids.discard(item["id"])
+                    break
+
+
 # request list maintenance thread
 def req_maintenance():
     while True:
@@ -91,10 +100,27 @@ def get_stats():
                      "payable": payable}), 200
 
 @app.route('/request_coffee', methods=["POST"])    
-def request():
+def req_coffee():
     cons_id = request.get_json("pin")
-  
-    
+    if cons_id:
+        req_add({"id": cons_id, "time": ""})
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"error": "Invalid request"}), 400
+
+@app.route('/confirm_coffee_request', methods=["POST"])    
+def confirm_coffee():
+    cons_id = request.get_json("pin")
+    bag_id = fetch_one("SELECT id FROM cf.bags WHERE end_date = NULL", ())
+    if not bag_id:
+        return jsonify({"error": "No active bag found"}), 400
+    date_now = datetime.now().strftime('%Y-%m-%d')
+    time_now = datetime.now().strftime('%H:%M:%S')
+    insert_one(
+        "INSERT INTO cf.cups (consumer_id, bag_id, date, time, paid) VALUES (%s, %s, %s, %s, %s)",
+        (cons_id, bag_id, date_now, time_now, False)
+    )
+    req_remove({"id": cons_id, "time": ""})
     return jsonify({"status": "success"}), 200
 
 
