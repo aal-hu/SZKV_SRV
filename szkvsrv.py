@@ -25,6 +25,7 @@ def fetch_one(query, params):
         raise RuntimeError(f"Database error: {str(e)}")
     
 def insert_one(query, params):
+    print(params)
     try:
         with psycopg2.connect(**DB_CONFIG) as conn:
             with conn.cursor() as cursor:
@@ -56,23 +57,23 @@ def req_remove(item_del):
                     cons_ids.discard(item["id"])
                     break
 
-
 # request list maintenance thread
 def req_maintenance():
     while True:
-        time.sleep(5)  
+        time.sleep(2)
         with lock:
             now = datetime.now()
             new_req_list = []
             new_cons_ids = set()
             for item in req_list:    
-                if  now - item["time"] < timedelta(minutes=30):
+                if  now - item["time"] < timedelta(seconds=10):
                     new_req_list.append(item)
                     new_cons_ids.add(item["id"])
             req_list.clear()
             req_list.extend(new_req_list)
             cons_ids.clear()
             cons_ids.update(new_cons_ids)
+            
 
 # Start the maintenance thread
 threading.Thread(target=req_maintenance, daemon=True).start()
@@ -101,23 +102,30 @@ def get_stats():
 
 @app.route('/request_coffee', methods=["POST"])    
 def req_coffee():
-    cons_id = request.get_json("pin")
+    data = request.get_json()
+    cons_id = data.get("pin")
     if cons_id:
         req_add({"id": cons_id, "time": ""})
         return jsonify({"status": "success"}), 200
     else:
         return jsonify({"error": "Invalid request"}), 400
+    
 
 @app.route('/confirm_coffee_request', methods=["POST"])    
 def confirm_coffee():
-    cons_id = request.get_json("pin")
-    bag_id = fetch_one("SELECT id FROM cf.bags WHERE end_date = NULL", ())
+    data = request.get_json()
+    cons_id = data.get("pin")
+    find_id = next((item for item in req_list if item["id"] == cons_id), None)
+    if not find_id:
+        return jsonify({"error": "Nincs még kávéigény rögzítve!"}), 400
+    bag_id = fetch_one("SELECT id FROM cf.bags WHERE end_date IS NULL", ())
     if not bag_id:
         return jsonify({"error": "No active bag found"}), 400
     date_now = datetime.now().strftime('%Y-%m-%d')
     time_now = datetime.now().strftime('%H:%M:%S')
+
     insert_one(
-        "INSERT INTO cf.cups (consumer_id, bag_id, date, time, paid) VALUES (%s, %s, %s, %s, %s)",
+        "INSERT INTO cf.cups (consumer_id, bag_id, c_date, c_time, paid) VALUES (%s, %s, %s, %s, %s)",
         (cons_id, bag_id, date_now, time_now, False)
     )
     req_remove({"id": cons_id, "time": ""})
