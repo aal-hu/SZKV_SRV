@@ -1,0 +1,20 @@
+2025-06-20 17:49:22 - Insert error: no results to fetch 
+
+2025-06-20 17:49:51 - Insert error: no results to fetch 
+
+2025-06-20 17:53:40 - Insert error: local variable 'e' referenced before assignment 
+2025-06-20 17:53:56 - Insert error: local variable 'e' referenced before assignment 
+2025-06-20 17:56:54 - Insert error: name 'val' is not defined 
+
+2025-06-20 18:02:59 - Insert error: no results to fetch 
+
+2025-06-20 18:04:45 - Inserted: (1111, Decimal('11'), '2025-06-20', '18:04:45', False) 
+
+2025-06-20 18:04:45 - Insert error: 'NoneType' object is not subscriptable 
+
+2025-06-20 18:08:23 - Inserted: (1111, Decimal('11'), '2025-06-20', '18:08:23', False) 
+
+2025-06-20 18:15:08 - Inserted: (1111, Decimal('11'), '2025-06-20', '18:15:08', False) 
+
+2025-06-20 18:48:13 - Inserted: (1111, Decimal('11'), '2025-06-20', '18:48:13', False) 
+2025-06-20 18:48:29 - Inserted: (1111, Decimal('11'), '2025-06-20', '18:48:29', False) 

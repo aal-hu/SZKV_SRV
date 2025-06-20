@@ -25,18 +25,26 @@ def fetch_one(query, params):
         raise RuntimeError(f"Database error: {str(e)}")
     
 def insert_one(query, params):
-    print(params)
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     try:
         with psycopg2.connect(**DB_CONFIG) as conn:
             with conn.cursor() as cursor:
                 cursor.execute(query, params)
                 conn.commit()
-                # Ha van RETURNING id
-                if cursor.description:
-                    return cursor.fetchone()[0]
+                log_insert(f"{timestamp} - Inserted: {params} \n")
+                return jsonify({"status": "success"}), 200
     except Exception as e:
+        log_insert(f"{timestamp} - Insert error: {str(e)} \n")
         raise RuntimeError(f"Insert error: {str(e)}")    
     
+def log_insert(text):
+    try:
+        with open("szkvsrv.log", "a", encoding="utf-8") as log_file:
+            log_file.write( text )
+    except Exception as e:
+        print(f"Log error: {str(e)}")
+
+
 
 req_list = []
 cons_ids = set()
@@ -60,7 +68,7 @@ def req_remove(item_del):
 # request list maintenance thread
 def req_maintenance():
     while True:
-        time.sleep(2)
+        time.sleep(3)
         with lock:
             now = datetime.now()
             new_req_list = []
@@ -111,22 +119,20 @@ def req_coffee():
         req_add({"id": cons_id, "time": ""})
         return jsonify({"status": "success"}), 200
     else:
-        return jsonify({"error": "Invalid request"}), 400
+        return jsonify({"error": "Invalid data!"}), 400
     
 
 @app.route('/confirm_coffee_request', methods=["POST"])    
 def confirm_coffee():
     data = request.get_json()
     cons_id = data.get("pin")
-    find_id = next((item for item in req_list if item["id"] == cons_id), None)
+    find_id = next((item for item in req_list if item["id"] == cons_id), False)
     if not find_id:
+        fetch_one("SELECT id FROM cf.consumers WHERE id = 0", ())        
         return jsonify({"error": "Nincs még kávéigény rögzítve!"}), 400
     bag_id = fetch_one("SELECT id FROM cf.bags WHERE end_date IS NULL", ())
-    if not bag_id:
-        return jsonify({"error": "No active bag found"}), 400
     date_now = datetime.now().strftime('%Y-%m-%d')
     time_now = datetime.now().strftime('%H:%M:%S')
-
     insert_one(
         "INSERT INTO cf.cups (consumer_id, bag_id, c_date, c_time, paid) VALUES (%s, %s, %s, %s, %s)",
         (cons_id, bag_id, date_now, time_now, False)
