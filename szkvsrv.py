@@ -23,7 +23,19 @@ def fetch_one(query, params):
                 return result[0] if result else None
     except Exception as e:
         raise RuntimeError(f"Database error: {str(e)}")
-    
+
+def fetch_all(query, params = None):
+    try:
+        with psycopg2.connect(**DB_CONFIG) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                result = cursor.fetchall()
+                return result if result else None
+    except Exception as e:
+        raise RuntimeError(f"Database error: {str(e)}")
+
+
+
 def insert_one(query, params):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     try:
@@ -140,6 +152,29 @@ def confirm_coffee():
     req_remove({"id": cons_id, "time": ""})
     return jsonify({"status": "success"}), 200
 
+@app.route('/consumption_data', methods=["GET"])
+def get_cups():
+    
+    try:
+        rows = fetch_all("select co.name, ba.id, ba.brand, c_date, c_time from cf.cups as cu " \
+                            "join cf.bags as ba on cu.bag_id = ba.id" \
+                            " join cf.consumers as co on cu.consumer_id = co.id " \
+                            " order by c_date desc, c_time desc limit 100", None)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    data = [
+        {
+            "name": r[0],
+            "bag_id": r[1],
+            "brand": r[2],
+            "date": r[3].isoformat(),  # date -> ISO string
+            "time": str(r[4])          # time -> string
+        }
+        for r in rows
+    ]
+   
+    return jsonify({"status": "success", "data": data}), 200
 
 
 if __name__ == '__main__':
