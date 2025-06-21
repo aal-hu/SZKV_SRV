@@ -104,7 +104,7 @@ def get_stats():
     
     cons_id = request.args.get("pin")
     try:
-        name = fetch_one("SELECT name FROM cf.consumers WHERE id = %s", (cons_id,))
+        name = fetch_one("SELECT name FROM cf.consumers WHERE id = %s AND active", (cons_id,))
         consumptions = fetch_one("SELECT count(*) FROM cf.cups WHERE consumer_id = %s", (cons_id,))
         cons_payable = fetch_one("SELECT count(*) FROM cf.cups WHERE consumer_id = %s AND NOT paid", (cons_id,))
         payable = fetch_one("SELECT payable FROM cf.consumers WHERE id = %s", (cons_id,))
@@ -115,10 +115,15 @@ def get_stats():
     cons_payable = cons_payable if cons_payable is not None else 0
     payable = payable if payable is not None else 0
 
-    return jsonify({"name": name,
+    print(name)
+
+    if name is not None:
+        return  jsonify({"name": name,
                     "consumptions": consumptions,
                     "cons_payable": cons_payable,
                      "payable": payable}), 200
+    else:
+        return jsonify({'error': 'Invalid pin or inactive user!'}), 500
 
 @app.route('/request_coffee', methods=["POST"])    
 def req_coffee():
