@@ -115,8 +115,6 @@ def get_stats():
     cons_payable = cons_payable if cons_payable is not None else 0
     payable = payable if payable is not None else 0
 
-    print(name)
-
     if name is not None:
         return  jsonify({"name": name,
                     "consumptions": consumptions,
