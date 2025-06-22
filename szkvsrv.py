@@ -181,8 +181,14 @@ def get_cups():
 
 
 if __name__ == '__main__':
+    # teszt
     app.run(host='0.0.0.0', port=5000, ssl_context=(
         '/home/al/Python/SZKV_SRV/cert/cert.pem',
         '/home/al/Python/SZKV_SRV/cert/key.pem'),
          debug=True)    
+    # production
+    #app.run(host='0.0.0.0', port=48000, ssl_context=(
+        #'/home/al/Python/szkvsrv/cert/cert.pem',
+        #'/home/al/Python/szkvsrv/cert/key.pem'),
+         #debug=True)    
 
